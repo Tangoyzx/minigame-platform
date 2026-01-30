@@ -56,6 +56,7 @@ export default class GameManager {
     
     // 触摸事件处理函数（需要保存引用以便移除）
     this.touchStartHandler = null;
+    this.touchMoveHandler = null;
     this.touchEndHandler = null;
   }
   
@@ -92,7 +93,7 @@ export default class GameManager {
   
   /**
    * 设置触摸事件监听
-   * 微信小游戏使用 wx.onTouchStart 和 wx.onTouchEnd
+   * 微信小游戏使用 wx.onTouchStart、wx.onTouchMove 和 wx.onTouchEnd
    */
   setupTouchEvents() {
     // 触摸开始
@@ -100,6 +101,17 @@ export default class GameManager {
       const touch = event.touches[0];
       if (touch && this.currentScene) {
         this.currentScene.onTouchStart({
+          x: touch.clientX,
+          y: touch.clientY
+        });
+      }
+    };
+    
+    // 触摸移动
+    this.touchMoveHandler = (event) => {
+      const touch = event.touches[0];
+      if (touch && this.currentScene && this.currentScene.onTouchMove) {
+        this.currentScene.onTouchMove({
           x: touch.clientX,
           y: touch.clientY
         });
@@ -119,6 +131,7 @@ export default class GameManager {
     
     // 注册事件
     wx.onTouchStart(this.touchStartHandler);
+    wx.onTouchMove(this.touchMoveHandler);
     wx.onTouchEnd(this.touchEndHandler);
   }
   

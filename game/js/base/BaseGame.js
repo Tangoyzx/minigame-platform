@@ -153,6 +153,16 @@ export default class BaseGame {
   }
   
   /**
+   * 触摸移动事件
+   * 当玩家手指在屏幕上移动时调用
+   * 
+   * @param {Object} touch - 触摸信息，包含 x, y 坐标
+   */
+  onTouchMove(touch) {
+    // 子类可以重写
+  }
+  
+  /**
    * 触摸结束事件
    * 当玩家手指离开屏幕时调用
    * 

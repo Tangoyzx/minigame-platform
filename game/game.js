@@ -14,6 +14,12 @@ import GameLobby from './js/scenes/GameLobby.js';
 // 导入 FlappyBird 游戏
 import FlappyBird from './js/games/flappybird/FlappyBird.js';
 
+// 导入贪吃蛇游戏
+import SnakeGame from './js/games/snake/SnakeGame.js';
+
+// 导入2048游戏
+import Game2048 from './js/games/2048/2048Game.js';
+
 /**
  * 游戏启动函数
  * 就像按下游戏机的开机按钮一样！
@@ -37,14 +43,23 @@ function startGame() {
     GameClass: FlappyBird
   });
   
-  // 以后可以继续添加更多游戏，比如：
-  // gameManager.registerGame({
-  //   id: 'snake',
-  //   name: '贪吃蛇',
-  //   description: '控制小蛇吃食物，越吃越长！',
-  //   icon: '🐍',
-  //   GameClass: Snake
-  // });
+  // 注册贪吃蛇游戏
+  gameManager.registerGame({
+    id: 'snake',
+    name: '贪吃蛇',
+    description: '控制小蛇吃食物，越吃越长！',
+    icon: '🐍',
+    GameClass: SnakeGame
+  });
+  
+  // 注册2048游戏
+  gameManager.registerGame({
+    id: '2048',
+    name: '2048',
+    description: '滑动合并相同数字，目标是合成2048！',
+    icon: '🔢',
+    GameClass: Game2048
+  });
   
   // 显示游戏大厅（主界面）
   gameManager.showLobby();
