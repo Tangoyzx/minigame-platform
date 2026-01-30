@@ -1,0 +1,21 @@
+{
+  "name": "minigame-platform-tools",
+  "version": "1.0.0",
+  "description": "微信小游戏平台工具脚本",
+  "main": "upload.js",
+  "scripts": {
+    "upload": "node upload.js",
+    "upload:preview": "node upload.js --preview"
+  },
+  "dependencies": {
+    "miniprogram-ci": "^1.9.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "wechat",
+    "minigame",
+    "upload"
+  ],
+  "author": "",
+  "license": "MIT"
+}

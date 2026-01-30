@@ -1,0 +1,26 @@
+# 微信小游戏密钥和敏感配置
+tools/*key*
+tools/*secret*
+tools/*.pem
+tools/*.p12
+tools/config.json
+
+# 依赖文件
+node_modules/
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+.DS_Store
+Thumbs.db
+
+# IDE配置
+.vscode/
+.idea/
+
+# 微信开发者工具生成的文件
+.wechat_devtools/
+miniprogram_npm/
