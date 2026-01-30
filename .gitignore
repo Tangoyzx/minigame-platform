@@ -1,12 +1,15 @@
 # 微信小游戏密钥和敏感配置
+tools/*.key
 tools/*key*
 tools/*secret*
 tools/*.pem
 tools/*.p12
 tools/config.json
+tools/private.*.key
 
 # 依赖文件
 node_modules/
+tools/node_modules/
 
 # 日志文件
 *.log

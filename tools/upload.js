@@ -22,11 +22,11 @@ const fs = require('fs');
 
 const config = {
   // 小游戏的 AppID（在微信公众平台获取）
-  appid: 'wx1234567890abcdef',
+  appid: 'wx830f47b724e6ae8b',
   
   // 代码上传密钥文件路径
   // 在微信公众平台 -> 开发管理 -> 开发设置 -> 小程序代码上传 下载
-  privateKeyPath: path.join(__dirname, 'private.key'),
+  privateKeyPath: path.join(__dirname, 'private.wx830f47b724e6ae8b.key'),
   
   // 游戏代码目录
   projectPath: path.join(__dirname, '../game'),
