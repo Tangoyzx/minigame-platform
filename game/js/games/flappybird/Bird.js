@@ -22,8 +22,8 @@ export default class Bird {
    * @param {number} screenHeight - 屏幕高度（用于计算物理参数）
    */
   constructor(x, y, screenHeight) {
-    // 小鸟的半径（用于碰撞检测和绘制）
-    this.radius = 20;
+    // 小鸟的半径（用于碰撞检测和绘制）- 放大1.5倍
+    this.radius = 30;
     
     // 创建圆形物理体
     this.body = new CircleBody(x, y, this.radius);
@@ -129,7 +129,7 @@ export default class Bird {
     
     // 绘制身体轮廓
     ctx.strokeStyle = '#E6B800';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;  // 按比例增加线宽
     ctx.stroke();
     
     // 绘制眼睛
