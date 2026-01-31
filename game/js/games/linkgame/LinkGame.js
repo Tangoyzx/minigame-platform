@@ -18,16 +18,19 @@ export default class LinkGame extends BaseGame {
     super(gameManager);
     
     // 游戏配置
-    this.gridSize = 60;  // 格子大小
     this.gridRows = 8;   // 网格行数
     this.gridCols = 10;  // 网格列数
-    this.gridMargin = 20; // 网格边距
     
-    // 计算网格位置（居中）
-    this.gridWidth = this.gridCols * this.gridSize;
-    this.gridHeight = this.gridRows * this.gridSize;
-    this.gridX = (this.screenWidth - this.gridWidth) / 2;
-    this.gridY = (this.screenHeight - this.gridHeight) / 2 + 30;
+    // 动态计算格子大小和边距以适应不同屏幕
+    this.calculateGridDimensions();
+    
+    // 游戏状态
+    this.currentLevel = 1;
+    this.totalLevels = 5;
+    this.score = 0;
+    this.timeLeft = 180; // 3分钟
+    this.gameStarted = false;
+    this.isGameOver = false;
     
     // 游戏状态
     this.currentLevel = 1;
@@ -66,10 +69,55 @@ export default class LinkGame extends BaseGame {
   }
   
   /**
+   * 动态计算网格尺寸以适应不同屏幕
+   */
+  calculateGridDimensions() {
+    // 根据屏幕尺寸计算合适的格子大小
+    const minScreenDimension = Math.min(this.screenWidth, this.screenHeight);
+    
+    // 基础格子大小，根据屏幕尺寸动态调整
+    const baseGridSize = Math.floor(minScreenDimension * 0.06); // 屏幕最小尺寸的6%
+    
+    // 限制格子大小在合理范围内
+    this.gridSize = Math.max(40, Math.min(80, baseGridSize));
+    
+    // 计算边距，确保棋盘在屏幕内完全显示
+    const maxGridWidth = this.screenWidth * 0.9; // 最大占用屏幕宽度的90%
+    const maxGridHeight = this.screenHeight * 0.8; // 最大占用屏幕高度的80%
+    
+    // 如果当前配置超出最大限制，调整格子大小
+    const requiredWidth = this.gridCols * this.gridSize;
+    const requiredHeight = this.gridRows * this.gridSize;
+    
+    if (requiredWidth > maxGridWidth) {
+      this.gridSize = Math.floor(maxGridWidth / this.gridCols);
+    }
+    
+    if (requiredHeight > maxGridHeight) {
+      this.gridSize = Math.min(this.gridSize, Math.floor(maxGridHeight / this.gridRows));
+    }
+    
+    // 计算网格边距，确保居中显示
+    this.gridWidth = this.gridCols * this.gridSize;
+    this.gridHeight = this.gridRows * this.gridSize;
+    this.gridMargin = Math.max(10, Math.floor(this.gridSize * 0.3)); // 边距为格子大小的30%，最小10px
+    
+    // 计算网格位置（居中）
+    this.gridX = (this.screenWidth - this.gridWidth) / 2;
+    this.gridY = (this.screenHeight - this.gridHeight) / 2 + 30;
+    
+    console.log(`📏 网格配置: 格子大小=${this.gridSize}px, 边距=${this.gridMargin}px, 位置=(${this.gridX}, ${this.gridY})`);
+    console.log(`📊 棋盘占比: ${(this.gridWidth / this.screenWidth * 100).toFixed(1)}% 宽度, ${(this.gridHeight / this.screenHeight * 100).toFixed(1)}% 高度`);
+  }
+  
+  /**
    * 初始化游戏
    */
   init() {
     super.init();
+    
+    // 重新计算网格尺寸（确保使用最新的屏幕尺寸）
+    this.calculateGridDimensions();
     
     // 重置游戏状态
     this.currentLevel = 1;
@@ -374,25 +422,30 @@ export default class LinkGame extends BaseGame {
    * 渲染游戏UI
    */
   renderGameUI(ctx) {
-    // 顶部信息栏
+    // 顶部信息栏高度根据屏幕尺寸调整
+    const headerHeight = Math.max(50, this.screenHeight * 0.08);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, this.screenWidth, 60);
+    ctx.fillRect(0, 0, this.screenWidth, headerHeight);
+    
+    // 动态计算字体大小
+    const fontSize = Math.max(14, this.screenHeight * 0.025);
+    const textY = headerHeight / 2;
     
     // 关卡信息
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 18px PingFang SC';
+    ctx.font = `bold ${fontSize}px PingFang SC`;
     ctx.textAlign = 'left';
-    ctx.fillText(`关卡: ${this.currentLevel}/${this.totalLevels}`, 20, 25);
+    ctx.fillText(`关卡: ${this.currentLevel}/${this.totalLevels}`, 20, textY);
     
     // 分数
     ctx.textAlign = 'center';
-    ctx.fillText(`分数: ${this.score}`, this.screenWidth / 2, 25);
+    ctx.fillText(`分数: ${this.score}`, this.screenWidth / 2, textY);
     
     // 时间
     const minutes = Math.floor(this.timeLeft / 60);
     const seconds = this.timeLeft % 60;
     ctx.textAlign = 'right';
-    ctx.fillText(`时间: ${minutes}:${seconds.toString().padStart(2, '0')}`, this.screenWidth - 20, 25);
+    ctx.fillText(`时间: ${minutes}:${seconds.toString().padStart(2, '0')}`, this.screenWidth - 20, textY);
     
     // 提示按钮
     this.renderHintButton(ctx);
@@ -402,11 +455,17 @@ export default class LinkGame extends BaseGame {
    * 渲染提示按钮
    */
   renderHintButton(ctx) {
+    // 动态计算按钮大小和位置
+    const buttonWidth = Math.max(80, this.screenWidth * 0.15);
+    const buttonHeight = Math.max(35, this.screenHeight * 0.05);
+    const buttonX = this.screenWidth - buttonWidth - 20;
+    const buttonY = 70;
+    
     const hintButton = {
-      x: this.screenWidth - 120,
-      y: 70,
-      width: 100,
-      height: 40
+      x: buttonX,
+      y: buttonY,
+      width: buttonWidth,
+      height: buttonHeight
     };
     
     // 绘制按钮背景
@@ -414,9 +473,10 @@ export default class LinkGame extends BaseGame {
     drawRoundRect(ctx, hintButton.x, hintButton.y, hintButton.width, hintButton.height, 8);
     ctx.fill();
     
-    // 绘制按钮文字
+    // 绘制按钮文字（字体大小随屏幕尺寸调整）
+    const fontSize = Math.max(14, this.screenHeight * 0.02);
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '16px PingFang SC';
+    ctx.font = `bold ${fontSize}px PingFang SC`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('提示', hintButton.x + hintButton.width / 2, hintButton.y + hintButton.height / 2);
@@ -428,9 +488,15 @@ export default class LinkGame extends BaseGame {
    * 渲染网格
    */
   renderGrid(ctx) {
-    // 绘制网格背景
+    // 绘制网格背景（使用动态计算的边距）
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    drawRoundRect(ctx, this.gridX - 10, this.gridY - 10, this.gridWidth + 20, this.gridHeight + 20, 15);
+    drawRoundRect(ctx, 
+      this.gridX - this.gridMargin / 2, 
+      this.gridY - this.gridMargin / 2, 
+      this.gridWidth + this.gridMargin, 
+      this.gridHeight + this.gridMargin, 
+      Math.min(15, this.gridSize / 4)
+    );
     ctx.fill();
     
     // 绘制网格线
@@ -472,11 +538,12 @@ export default class LinkGame extends BaseGame {
   renderCell(ctx, cell) {
     const centerX = cell.x + this.gridSize / 2;
     const centerY = cell.y + this.gridSize / 2;
-    const radius = this.gridSize / 2 - 5;
+    const radius = this.gridSize / 2 - Math.max(3, this.gridSize * 0.08); // 根据格子大小调整边距
+    const cornerRadius = Math.max(4, this.gridSize * 0.1); // 圆角半径随格子大小调整
     
     // 绘制格子背景
     ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, 8);
+    drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, cornerRadius);
     ctx.fill();
     
     if (cell.pattern) {
@@ -522,10 +589,10 @@ export default class LinkGame extends BaseGame {
           break;
       }
       
-      // 绘制边框
+      // 绘制边框（线宽随格子大小调整）
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 2;
-      drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, 8);
+      ctx.lineWidth = Math.max(1, this.gridSize * 0.03);
+      drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, cornerRadius);
       ctx.stroke();
     }
   }
@@ -581,11 +648,12 @@ export default class LinkGame extends BaseGame {
   renderSelectedCell(ctx) {
     if (this.selectedCell) {
       const cell = this.selectedCell;
+      const cornerRadius = Math.max(4, this.gridSize * 0.1);
       
-      // 绘制选中框
+      // 绘制选中框（线宽随格子大小调整）
       ctx.strokeStyle = '#F39C12';
-      ctx.lineWidth = 3;
-      drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, 8);
+      ctx.lineWidth = Math.max(2, this.gridSize * 0.05);
+      drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, cornerRadius);
       ctx.stroke();
     }
   }
@@ -596,28 +664,13 @@ export default class LinkGame extends BaseGame {
   renderHintCell(ctx) {
     if (this.hintCell) {
       const cell = this.hintCell;
+      const cornerRadius = Math.max(4, this.gridSize * 0.1);
       
-      // 绘制提示框（闪烁效果）
+      // 绘制提示框（闪烁效果，线宽随格子大小调整）
       const alpha = Math.sin(Date.now() / 200) * 0.5 + 0.5;
       ctx.strokeStyle = `rgba(52, 152, 219, ${alpha})`;
-      ctx.lineWidth = 3;
-      drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, 8);
-      ctx.stroke();
-    }
-  }
-  
-  /**
-   * 渲染提示格子
-   */
-  renderHintCell(ctx) {
-    if (this.hintCell) {
-      const cell = this.hintCell;
-      
-      // 绘制提示框（闪烁效果）
-      const alpha = Math.sin(Date.now() / 200) * 0.5 + 0.5;
-      ctx.strokeStyle = `rgba(52, 152, 219, ${alpha})`;
-      ctx.lineWidth = 3;
-      drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, 8);
+      ctx.lineWidth = Math.max(2, this.gridSize * 0.05);
+      drawRoundRect(ctx, cell.x, cell.y, this.gridSize, this.gridSize, cornerRadius);
       ctx.stroke();
     }
   }
@@ -628,7 +681,7 @@ export default class LinkGame extends BaseGame {
   renderConnectionLine(ctx) {
     if (this.connectionPath && this.connectionPath.length > 1) {
       ctx.strokeStyle = '#F39C12';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = Math.max(3, this.gridSize * 0.06); // 线宽随格子大小调整
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       
@@ -659,16 +712,23 @@ export default class LinkGame extends BaseGame {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
     
+    // 动态计算字体大小和布局
+    const titleFontSize = Math.max(36, this.screenHeight * 0.07);
+    const textFontSize = Math.max(14, this.screenHeight * 0.025);
+    const titleY = this.screenHeight / 2 - this.screenHeight * 0.12;
+    const textY1 = this.screenHeight / 2 - this.screenHeight * 0.03;
+    const textY2 = this.screenHeight / 2 + this.screenHeight * 0.03;
+    
     // 标题
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 48px PingFang SC';
+    ctx.font = `bold ${titleFontSize}px PingFang SC`;
     ctx.textAlign = 'center';
-    ctx.fillText('连连看', this.screenWidth / 2, this.screenHeight / 2 - 80);
+    ctx.fillText('连连看', this.screenWidth / 2, titleY);
     
     // 游戏说明
-    ctx.font = '18px PingFang SC';
-    ctx.fillText('找到相同的图案并用不超过两个拐角的线连接', this.screenWidth / 2, this.screenHeight / 2 - 20);
-    ctx.fillText('点击屏幕开始游戏', this.screenWidth / 2, this.screenHeight / 2 + 20);
+    ctx.font = `${textFontSize}px PingFang SC`;
+    ctx.fillText('找到相同的图案并用不超过两个拐角的线连接', this.screenWidth / 2, textY1);
+    ctx.fillText('点击屏幕开始游戏', this.screenWidth / 2, textY2);
     
     // 关卡预览
     this.renderLevelPreview(ctx);
@@ -678,20 +738,26 @@ export default class LinkGame extends BaseGame {
    * 渲染关卡预览
    */
   renderLevelPreview(ctx) {
-    ctx.font = '16px PingFang SC';
-    ctx.fillText(`总关卡数: ${this.totalLevels}`, this.screenWidth / 2, this.screenHeight / 2 + 80);
+    // 动态计算字体大小和布局
+    const textFontSize = Math.max(14, this.screenHeight * 0.025);
+    const previewY = this.screenHeight / 2 + this.screenHeight * 0.12;
+    
+    ctx.font = `${textFontSize}px PingFang SC`;
+    ctx.fillText(`总关卡数: ${this.totalLevels}`, this.screenWidth / 2, previewY);
     
     // 绘制一些示例图案
     const previewPatterns = this.patterns.slice(0, 6);
-    const startX = this.screenWidth / 2 - (previewPatterns.length * 40) / 2;
+    const patternSize = Math.max(25, this.screenHeight * 0.04); // 图案大小随屏幕调整
+    const patternSpacing = patternSize * 1.5;
+    const startX = this.screenWidth / 2 - (previewPatterns.length * patternSpacing) / 2;
+    const patternY = previewY + this.screenHeight * 0.06;
     
     previewPatterns.forEach((pattern, index) => {
-      const x = startX + index * 40;
-      const y = this.screenHeight / 2 + 120;
+      const x = startX + index * patternSpacing;
       
       ctx.fillStyle = pattern.color;
       ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.arc(x, patternY, patternSize / 2, 0, Math.PI * 2);
       ctx.fill();
     });
   }
@@ -704,23 +770,32 @@ export default class LinkGame extends BaseGame {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
     
+    // 动态计算字体大小和布局
+    const titleFontSize = Math.max(28, this.screenHeight * 0.05);
+    const textFontSize = Math.max(18, this.screenHeight * 0.03);
+    const smallFontSize = Math.max(14, this.screenHeight * 0.025);
+    const titleY = this.screenHeight / 2 - this.screenHeight * 0.1;
+    const scoreY = this.screenHeight / 2;
+    const levelY = this.screenHeight / 2 + this.screenHeight * 0.06;
+    const restartY = this.screenHeight / 2 + this.screenHeight * 0.15;
+    
     // 游戏结束文字
     ctx.fillStyle = '#E74C3C';
-    ctx.font = 'bold 36px PingFang SC';
+    ctx.font = `bold ${titleFontSize}px PingFang SC`;
     ctx.textAlign = 'center';
-    ctx.fillText('游戏结束', this.screenWidth / 2, this.screenHeight / 2 - 60);
+    ctx.fillText('游戏结束', this.screenWidth / 2, titleY);
     
     // 最终得分
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '24px PingFang SC';
-    ctx.fillText(`最终得分: ${this.score}`, this.screenWidth / 2, this.screenHeight / 2);
+    ctx.font = `${textFontSize}px PingFang SC`;
+    ctx.fillText(`最终得分: ${this.score}`, this.screenWidth / 2, scoreY);
     
     // 到达关卡
-    ctx.fillText(`到达关卡: ${this.currentLevel}`, this.screenWidth / 2, this.screenHeight / 2 + 40);
+    ctx.fillText(`到达关卡: ${this.currentLevel}`, this.screenWidth / 2, levelY);
     
     // 重新开始提示
-    ctx.font = '18px PingFang SC';
-    ctx.fillText('点击屏幕重新开始', this.screenWidth / 2, this.screenHeight / 2 + 100);
+    ctx.font = `${smallFontSize}px PingFang SC`;
+    ctx.fillText('点击屏幕重新开始', this.screenWidth / 2, restartY);
   }
   
   /**
