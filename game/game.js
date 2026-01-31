@@ -23,6 +23,9 @@ import Game2048 from './js/games/2048/2048Game.js';
 // 导入连连看游戏
 import LinkGame from './js/games/linkgame/index.js';
 
+// 导入跑酷游戏
+import RunnerGame from './js/games/runner/RunnerGame.js';
+
 /**
  * 游戏启动函数
  * 就像按下游戏机的开机按钮一样！
@@ -71,6 +74,15 @@ function startGame() {
     description: '找到相同的图案并用不超过两个拐角的线连接！',
     icon: '🔗',
     GameClass: LinkGame
+  });
+  
+  // 注册跑酷游戏
+  gameManager.registerGame({
+    id: 'runner',
+    name: '跑酷游戏',
+    description: '控制角色左右移动和跳跃，躲避障碍物，收集金币！',
+    icon: '🏃',
+    GameClass: RunnerGame
   });
   
   // 显示游戏大厅（主界面）

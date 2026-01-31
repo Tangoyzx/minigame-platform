@@ -102,8 +102,9 @@ export default class Bird {
    * 渲染小鸟
    * 
    * @param {CanvasRenderingContext2D} ctx - 画布上下文
+   * @param {boolean} isInvincible - 是否处于无敌状态
    */
-  render(ctx) {
+  render(ctx, isInvincible = false) {
     ctx.save();
     
     // 移动到小鸟位置并旋转
@@ -112,23 +113,30 @@ export default class Bird {
     
     const r = this.radius;
     
+    // 无敌状态效果
+    if (isInvincible) {
+      // 闪烁效果（根据时间交替显示透明度）
+      const blinkAlpha = Math.sin(Date.now() / 100) * 0.5 + 0.5;
+      ctx.globalAlpha = 0.7 + blinkAlpha * 0.3;
+    }
+    
     // 绘制翅膀（在身体后面）
     ctx.save();
     ctx.rotate(this.wingAngle * Math.PI / 180);
-    ctx.fillStyle = this.wingColor;
+    ctx.fillStyle = isInvincible ? '#00FFFF' : this.wingColor;
     ctx.beginPath();
     ctx.ellipse(-r * 0.3, 0, r * 0.6, r * 0.3, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     
     // 绘制身体（圆形）
-    ctx.fillStyle = this.bodyColor;
+    ctx.fillStyle = isInvincible ? '#00BFFF' : this.bodyColor;
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
     
     // 绘制身体轮廓
-    ctx.strokeStyle = '#E6B800';
+    ctx.strokeStyle = isInvincible ? '#0080FF' : '#E6B800';
     ctx.lineWidth = 3;  // 按比例增加线宽
     ctx.stroke();
     
@@ -152,7 +160,7 @@ export default class Bird {
     ctx.fill();
     
     // 绘制嘴巴（三角形）
-    ctx.fillStyle = this.beakColor;
+    ctx.fillStyle = isInvincible ? '#FF6B35' : this.beakColor;
     ctx.beginPath();
     ctx.moveTo(r * 0.8, 0);
     ctx.lineTo(r * 1.3, r * 0.15);

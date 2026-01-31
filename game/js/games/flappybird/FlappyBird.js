@@ -19,6 +19,7 @@ import BaseGame from '../../base/BaseGame.js';
 import PhysicsWorld from '../../physics/PhysicsWorld.js';
 import Bird from './Bird.js';
 import Pipe from './Pipe.js';
+import HealthPack from './HealthPack.js';
 import { randomInt, drawRoundRect } from '../../utils/utils.js';
 
 export default class FlappyBird extends BaseGame {
@@ -41,6 +42,12 @@ export default class FlappyBird extends BaseGame {
     this.score = 0;
     this.bestScore = this.loadBestScore();
     
+    // ===== 生命值系统 =====
+    this.lives = 3;           // 初始生命值
+    this.isInvincible = false; // 是否处于无敌状态
+    this.invincibleTimer = 0;  // 无敌状态计时器
+    this.invincibleDuration = 1; // 无敌持续时间（秒）
+    
     // ===== 创建小鸟 =====
     this.bird = new Bird(
       this.screenWidth * 0.3,   // 小鸟在屏幕左侧 1/3 处
@@ -55,7 +62,14 @@ export default class FlappyBird extends BaseGame {
     this.pipes = [];
     this.pipeSpawnTimer = 1.5;  // 让第一根管道在0.5秒后出现
     this.pipeSpawnInterval = 2;  // 每 2 秒生成一个管道
-    this.pipeGapHeight = this.screenHeight * 0.28;  // 管道缺口高度
+    // 管道缺口高度范围（随机）
+    this.minPipeGapHeight = this.screenHeight * 0.2;  // 最小缺口高度
+    this.maxPipeGapHeight = this.screenHeight * 0.35;  // 最大缺口高度
+    
+    // ===== 补血包配置 =====
+    this.healthPacks = [];  // 补血包数组
+    this.healthPackChance = 0.2;  // 20%的概率生成补血包
+    this.maxLives = 3;  // 最大生命值
     
     // 管道缺口 Y 位置的范围
     this.gapMinY = this.screenHeight * 0.25;
@@ -153,6 +167,12 @@ export default class FlappyBird extends BaseGame {
     // 生成新管道
     this.spawnPipes(dt);
     
+    // 更新补血包
+    this.updateHealthPacks(dt);
+    
+    // 更新无敌状态
+    this.updateInvincibleState(dt);
+    
     // 检查碰撞
     this.checkCollisions();
     
@@ -216,11 +236,14 @@ export default class FlappyBird extends BaseGame {
       // 随机生成缺口位置
       const gapY = randomInt(this.gapMinY, this.gapMaxY);
       
+      // 随机生成缺口高度（在最小和最大之间）
+      const pipeGapHeight = randomInt(this.minPipeGapHeight, this.maxPipeGapHeight);
+      
       // 创建新管道
       const pipe = new Pipe(
         this.screenWidth + 30,  // 从屏幕右边外面开始
         gapY,
-        this.pipeGapHeight,
+        pipeGapHeight,
         this.screenWidth,
         this.screenHeight
       );
@@ -231,7 +254,35 @@ export default class FlappyBird extends BaseGame {
       }
       
       this.pipes.push(pipe);
+      
+      // 检查是否生成补血包
+      // 条件：1. 不是满血状态 2. 20%的概率
+      if (this.lives < this.maxLives && Math.random() < this.healthPackChance) {
+        this.spawnHealthPack(this.screenWidth + 30, gapY);
+      }
     }
+  }
+  
+  /**
+   * 生成补血包
+   * 
+   * @param {number} pipeX - 管道的 X 位置
+   * @param {number} gapY - 管道缺口的 Y 位置
+   */
+  spawnHealthPack(pipeX, gapY) {
+    // 计算补血包的位置（在管道缺口中心上方或下方随机位置）
+    // 这里我们选择在缺口中心位置生成
+    const healthPackX = pipeX;
+    const healthPackY = gapY;
+    
+    // 创建新补血包
+    const healthPack = new HealthPack(healthPackX, healthPackY);
+    
+    // 将补血包的物理体添加到物理世界
+    this.physicsWorld.addBody(healthPack.getBody());
+    
+    this.healthPacks.push(healthPack);
+    console.log('❤️ 生成补血包！');
   }
   
   /**
@@ -240,11 +291,24 @@ export default class FlappyBird extends BaseGame {
   checkCollisions() {
     const birdBody = this.bird.getBody();
     
+    // 检查小鸟是否与任何补血包碰撞
+    for (const healthPack of this.healthPacks) {
+      if (!healthPack.isCollected() && this.physicsWorld.circleVsCircle(birdBody, healthPack.getBody())) {
+        this.handleHealthPackCollect(healthPack);
+        // 补血包碰撞后继续检测其他碰撞
+      }
+    }
+    
+    // 如果处于无敌状态，不检测管道碰撞
+    if (this.isInvincible) {
+      return;
+    }
+    
     // 检查小鸟是否与任何管道碰撞
     for (const pipe of this.pipes) {
       for (const pipeBody of pipe.getBodies()) {
         if (this.physicsWorld.circleVsRect(birdBody, pipeBody)) {
-          this.handleGameOver();
+          this.handleCollision();
           return;
         }
       }
@@ -268,14 +332,49 @@ export default class FlappyBird extends BaseGame {
   }
   
   /**
+   * 更新无敌状态
+   */
+  updateInvincibleState(dt) {
+    if (this.isInvincible) {
+      this.invincibleTimer += dt;
+      if (this.invincibleTimer >= this.invincibleDuration) {
+        this.isInvincible = false;
+        this.invincibleTimer = 0;
+      }
+    }
+  }
+  
+  /**
+   * 更新补血包
+   */
+  updateHealthPacks(dt) {
+    for (let i = this.healthPacks.length - 1; i >= 0; i--) {
+      const healthPack = this.healthPacks[i];
+      
+      // 更新补血包位置
+      healthPack.update(dt);
+      
+      // 检查是否已收集或移出屏幕
+      if (healthPack.isCollected() || healthPack.isOutOfScreen()) {
+        // 从物理世界移除补血包的物理体
+        this.physicsWorld.removeBody(healthPack.getBody());
+        // 从数组中移除
+        this.healthPacks.splice(i, 1);
+      }
+    }
+  }
+  
+  /**
    * 检查边界
    */
   checkBoundaries() {
     const birdBody = this.bird.getBody();
     
-    // 检查是否撞到地面
+    // 检查是否撞到地面（落地直接死亡）
     if (birdBody.y + birdBody.radius > this.groundY) {
       birdBody.y = this.groundY - birdBody.radius;
+      // 落地直接游戏结束，不管剩余生命值
+      this.lives = 0;
       this.handleGameOver();
       return;
     }
@@ -284,6 +383,40 @@ export default class FlappyBird extends BaseGame {
     if (birdBody.y - birdBody.radius < 0) {
       birdBody.y = birdBody.radius;
       birdBody.vy = 0;
+    }
+  }
+  
+  /**
+   * 处理碰撞事件
+   */
+  handleCollision() {
+    // 减少生命值
+    this.lives--;
+    console.log(`❤️ 生命值: ${this.lives}`);
+    
+    // 检查是否游戏结束
+    if (this.lives <= 0) {
+      this.handleGameOver();
+      return;
+    }
+    
+    // 设置无敌状态
+    this.isInvincible = true;
+    this.invincibleTimer = 0;
+    console.log('🛡️ 无敌状态激活！');
+  }
+  
+  /**
+   * 处理收集补血包
+   */
+  handleHealthPackCollect(healthPack) {
+    // 标记补血包为已收集
+    healthPack.collect();
+    
+    // 增加生命值（不超过最大生命值）
+    if (this.lives < this.maxLives) {
+      this.lives++;
+      console.log(`❤️ 收集补血包！生命值: ${this.lives}`);
     }
   }
   
@@ -321,22 +454,27 @@ export default class FlappyBird extends BaseGame {
       pipe.render(ctx);
     }
     
-    // 4. 绘制地面
+    // 4. 绘制补血包
+    for (const healthPack of this.healthPacks) {
+      healthPack.render(ctx);
+    }
+    
+    // 5. 绘制地面
     this.renderGround(ctx);
     
-    // 5. 绘制小鸟
-    this.bird.render(ctx);
+    // 6. 绘制小鸟（传递无敌状态）
+    this.bird.render(ctx, this.isInvincible);
     
-    // 6. 绘制物理调试信息（如果开启）
+    // 7. 绘制物理调试信息（如果开启）
     this.physicsWorld.debugDraw(ctx);
     
-    // 7. 绘制 UI
+    // 8. 绘制 UI
     this.renderUI(ctx);
     
-    // 8. 绘制返回按钮
+    // 9. 绘制返回按钮
     this.renderBackButton(ctx);
     
-    // 9. 绘制调试按钮
+    // 10. 绘制调试按钮
     this.renderDebugButton(ctx);
   }
   
@@ -408,6 +546,15 @@ export default class FlappyBird extends BaseGame {
     // 文字描边
     ctx.strokeText(this.score.toString(), this.screenWidth / 2, 100);
     ctx.fillText(this.score.toString(), this.screenWidth / 2, 100);
+    
+    // 生命值显示
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    
+    // 文字描边
+    ctx.strokeText(`生命: ${this.lives}`, 30, 30);
+    ctx.fillText(`生命: ${this.lives}`, 30, 30);
     
     // 根据游戏状态显示不同的 UI
     switch (this.gameState) {
@@ -612,6 +759,10 @@ export default class FlappyBird extends BaseGame {
     
     // 重置游戏状态
     this.score = 0;
+    this.lives = 3;
+    this.isInvincible = false;
+    this.invincibleTimer = 0;
+    this.healthPacks = [];
     this.pipeSpawnTimer = 0;
     this.gameState = 'ready';
     
