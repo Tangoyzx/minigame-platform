@@ -367,4 +367,313 @@ export class LinkGameAlgorithm {
     
     return true;
   }
+  
+  /**
+   * 检查棋盘是否可完全消除（深度验证算法）
+   */
+  isBoardSolvable() {
+    // 首先验证基本游戏状态
+    if (!this.validateGameState()) {
+      return false;
+    }
+    
+    // 创建网格的深拷贝用于模拟消除
+    const simulatedGrid = this.createGridCopy();
+    
+    // 模拟消除过程
+    return this.simulateElimination(simulatedGrid);
+  }
+  
+  /**
+   * 创建网格的深拷贝
+   */
+  createGridCopy() {
+    const gridCopy = [];
+    
+    for (let row = 0; row < this.gridRows; row++) {
+      gridCopy[row] = [];
+      for (let col = 0; col < this.gridCols; col++) {
+        const originalCell = this.grid[row][col];
+        gridCopy[row][col] = {
+          row: row,
+          col: col,
+          pattern: originalCell.pattern ? { ...originalCell.pattern } : null,
+          visible: originalCell.visible,
+          matched: originalCell.matched,
+          x: originalCell.x,
+          y: originalCell.y
+        };
+      }
+    }
+    
+    return gridCopy;
+  }
+  
+  /**
+   * 模拟消除过程
+   */
+  simulateElimination(grid) {
+    let eliminatedCount = 0;
+    const totalCells = this.gridRows * this.gridCols;
+    const maxIterations = totalCells * 2; // 防止无限循环
+    
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      // 查找所有可连接的格子对
+      const connectablePairs = this.findAllConnectablePairsInGrid(grid);
+      
+      if (connectablePairs.length === 0) {
+        // 没有可连接的格子对，检查是否已完全消除
+        const remainingCells = this.getVisibleCellsFromGrid(grid);
+        return remainingCells.length === 0;
+      }
+      
+      // 选择一个可连接的格子对进行消除
+      const pair = connectablePairs[0]; // 选择第一个可连接的对
+      
+      // 消除这对格子
+      pair.cell1.matched = true;
+      pair.cell2.matched = true;
+      eliminatedCount += 2;
+      
+      // 如果所有格子都已消除，返回成功
+      if (eliminatedCount >= totalCells) {
+        return true;
+      }
+    }
+    
+    // 达到最大迭代次数仍未完全消除
+    console.warn('棋盘验证：达到最大迭代次数，棋盘可能不可完全消除');
+    return false;
+  }
+  
+  /**
+   * 在指定网格中查找所有可连接的格子对
+   */
+  findAllConnectablePairsInGrid(grid) {
+    const pairs = [];
+    const visibleCells = this.getVisibleCellsFromGrid(grid);
+    
+    // 按图案类型分组
+    const patternGroups = {};
+    for (const cell of visibleCells) {
+      if (!cell.pattern) continue;
+      
+      const patternId = cell.pattern.id;
+      if (!patternGroups[patternId]) {
+        patternGroups[patternId] = [];
+      }
+      patternGroups[patternId].push(cell);
+    }
+    
+    // 检查每组内的所有配对
+    for (const patternId in patternGroups) {
+      const cells = patternGroups[patternId];
+      
+      for (let i = 0; i < cells.length; i++) {
+        for (let j = i + 1; j < cells.length; j++) {
+          const cell1 = cells[i];
+          const cell2 = cells[j];
+          
+          if (this.canConnectInGrid(cell1, cell2, grid)) {
+            pairs.push({ cell1, cell2 });
+          }
+        }
+      }
+    }
+    
+    return pairs;
+  }
+  
+  /**
+   * 在指定网格中检查两个格子是否可以连接
+   */
+  canConnectInGrid(cell1, cell2, grid) {
+    // 基本检查
+    if (!this.isValidCellInGrid(cell1, grid) || !this.isValidCellInGrid(cell2, grid)) {
+      return false;
+    }
+    
+    if (cell1 === cell2) {
+      return false;
+    }
+    
+    if (!cell1.pattern || !cell2.pattern) {
+      return false;
+    }
+    
+    if (cell1.pattern.id !== cell2.pattern.id) {
+      return false;
+    }
+    
+    if (cell1.matched || cell2.matched) {
+      return false;
+    }
+    
+    // 检查连接路径
+    return this.checkStraightLineInGrid(cell1, cell2, grid) ||
+           this.checkOneCornerInGrid(cell1, cell2, grid) ||
+           this.checkTwoCornersInGrid(cell1, cell2, grid);
+  }
+  
+  /**
+   * 在指定网格中检查直线连接
+   */
+  checkStraightLineInGrid(cell1, cell2, grid) {
+    // 同一行
+    if (cell1.row === cell2.row) {
+      return this.checkHorizontalLineInGrid(cell1, cell2, grid);
+    }
+    
+    // 同一列
+    if (cell1.col === cell2.col) {
+      return this.checkVerticalLineInGrid(cell1, cell2, grid);
+    }
+    
+    return false;
+  }
+  
+  /**
+   * 在指定网格中检查水平直线连接
+   */
+  checkHorizontalLineInGrid(cell1, cell2, grid) {
+    const minCol = Math.min(cell1.col, cell2.col);
+    const maxCol = Math.max(cell1.col, cell2.col);
+    
+    // 检查中间所有格子是否为空
+    for (let col = minCol + 1; col < maxCol; col++) {
+      if (!this.isCellEmptyInGrid(cell1.row, col, grid)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * 在指定网格中检查垂直直线连接
+   */
+  checkVerticalLineInGrid(cell1, cell2, grid) {
+    const minRow = Math.min(cell1.row, cell2.row);
+    const maxRow = Math.max(cell1.row, cell2.row);
+    
+    // 检查中间所有格子是否为空
+    for (let row = minRow + 1; row < maxRow; row++) {
+      if (!this.isCellEmptyInGrid(row, cell1.col, grid)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * 在指定网格中检查单拐角连接
+   */
+  checkOneCornerInGrid(cell1, cell2, grid) {
+    // 尝试两个可能的拐角点
+    const corner1 = { row: cell1.row, col: cell2.col };
+    const corner2 = { row: cell2.row, col: cell1.col };
+    
+    // 检查拐角点1
+    if (this.isValidCornerInGrid(corner1, grid) && 
+        this.checkStraightLineInGrid(cell1, corner1, grid) && 
+        this.checkStraightLineInGrid(corner1, cell2, grid)) {
+      return true;
+    }
+    
+    // 检查拐角点2
+    if (this.isValidCornerInGrid(corner2, grid) && 
+        this.checkStraightLineInGrid(cell1, corner2, grid) && 
+        this.checkStraightLineInGrid(corner2, cell2, grid)) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * 在指定网格中检查双拐角连接
+   */
+  checkTwoCornersInGrid(cell1, cell2, grid) {
+    // 水平扫描寻找第一个拐角点
+    for (let row = 0; row < this.gridRows; row++) {
+      if (row === cell1.row || row === cell2.row) continue;
+      
+      const corner1 = { row: row, col: cell1.col };
+      const corner2 = { row: row, col: cell2.col };
+      
+      if (this.isValidCornerInGrid(corner1, grid) && this.isValidCornerInGrid(corner2, grid)) {
+        if (this.checkStraightLineInGrid(cell1, corner1, grid) && 
+            this.checkHorizontalLineInGrid(corner1, corner2, grid) && 
+            this.checkStraightLineInGrid(corner2, cell2, grid)) {
+          return true;
+        }
+      }
+    }
+    
+    // 垂直扫描寻找第一个拐角点
+    for (let col = 0; col < this.gridCols; col++) {
+      if (col === cell1.col || col === cell2.col) continue;
+      
+      const corner1 = { row: cell1.row, col: col };
+      const corner2 = { row: cell2.row, col: col };
+      
+      if (this.isValidCornerInGrid(corner1, grid) && this.isValidCornerInGrid(corner2, grid)) {
+        if (this.checkStraightLineInGrid(cell1, corner1, grid) && 
+            this.checkVerticalLineInGrid(corner1, corner2, grid) && 
+            this.checkStraightLineInGrid(corner2, cell2, grid)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+  
+  /**
+   * 在指定网格中检查拐角点是否有效
+   */
+  isValidCornerInGrid(corner, grid) {
+    return this.isCellEmptyInGrid(corner.row, corner.col, grid);
+  }
+  
+  /**
+   * 在指定网格中检查格子是否为空
+   */
+  isCellEmptyInGrid(row, col, grid) {
+    if (row < 0 || row >= this.gridRows || col < 0 || col >= this.gridCols) {
+      return false;
+    }
+    
+    const cell = grid[row][col];
+    return !cell.visible || cell.matched;
+  }
+  
+  /**
+   * 在指定网格中检查格子是否有效
+   */
+  isValidCellInGrid(cell, grid) {
+    if (!cell) return false;
+    if (cell.row < 0 || cell.row >= this.gridRows) return false;
+    if (cell.col < 0 || cell.col >= this.gridCols) return false;
+    return true;
+  }
+  
+  /**
+   * 从指定网格中获取所有可见且未匹配的格子
+   */
+  getVisibleCellsFromGrid(grid) {
+    const visibleCells = [];
+    
+    for (let row = 0; row < this.gridRows; row++) {
+      for (let col = 0; col < this.gridCols; col++) {
+        const cell = grid[row][col];
+        if (cell.visible && !cell.matched) {
+          visibleCells.push(cell);
+        }
+      }
+    }
+    
+    return visibleCells;
+  }
 }

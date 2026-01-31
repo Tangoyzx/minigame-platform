@@ -160,31 +160,59 @@ export default class LinkGame extends BaseGame {
     // 选择当前关卡使用的图案
     const availablePatterns = this.patterns.slice(0, patternCount);
     
-    // 创建图案对（每个图案出现两次）
-    const patternPairs = [];
-    for (const pattern of availablePatterns) {
-      patternPairs.push(pattern, pattern);
-    }
+    const maxRetries = 50; // 最大重试次数
+    let retryCount = 0;
+    let isSolvable = false;
     
-    // 打乱顺序
-    this.shuffleArray(patternPairs);
-    
-    // 填充网格
-    let patternIndex = 0;
-    const totalCells = this.gridRows * this.gridCols;
-    
-    for (let row = 0; row < this.gridRows; row++) {
-      for (let col = 0; col < this.gridCols; col++) {
-        if (patternIndex < patternPairs.length && patternIndex < totalCells) {
-          this.grid[row][col].pattern = patternPairs[patternIndex];
-          this.grid[row][col].visible = true;
-          this.grid[row][col].matched = false;
-          patternIndex++;
-        } else {
-          this.grid[row][col].visible = false;
-          this.grid[row][col].matched = true;
+    while (!isSolvable && retryCount < maxRetries) {
+      // 创建图案对（每个图案出现两次）
+      const patternPairs = [];
+      for (const pattern of availablePatterns) {
+        patternPairs.push(pattern, pattern);
+      }
+      
+      // 打乱顺序
+      this.shuffleArray(patternPairs);
+      
+      // 填充网格
+      let patternIndex = 0;
+      const totalCells = this.gridRows * this.gridCols;
+      
+      for (let row = 0; row < this.gridRows; row++) {
+        for (let col = 0; col < this.gridCols; col++) {
+          if (patternIndex < patternPairs.length && patternIndex < totalCells) {
+            this.grid[row][col].pattern = patternPairs[patternIndex];
+            this.grid[row][col].visible = true;
+            this.grid[row][col].matched = false;
+            patternIndex++;
+          } else {
+            this.grid[row][col].visible = false;
+            this.grid[row][col].matched = true;
+          }
         }
       }
+      
+      // 验证棋盘是否可解
+      this.algorithm = new LinkGameAlgorithm(this.grid);
+      isSolvable = this.algorithm.isBoardSolvable();
+      
+      if (!isSolvable) {
+        retryCount++;
+        console.log(`🔄 棋盘不可解，重新生成 (${retryCount}/${maxRetries})`);
+        
+        // 如果达到最大重试次数，尝试洗牌
+        if (retryCount >= maxRetries) {
+          console.log('⚠️ 达到最大重试次数，尝试洗牌棋盘');
+          this.algorithm.reshuffleGrid();
+          isSolvable = this.algorithm.isBoardSolvable();
+        }
+      }
+    }
+    
+    if (isSolvable) {
+      console.log(`✅ 生成可完全消除的棋盘 (重试次数: ${retryCount})`);
+    } else {
+      console.warn('❌ 无法生成可完全消除的棋盘，使用当前棋盘继续游戏');
     }
   }
   

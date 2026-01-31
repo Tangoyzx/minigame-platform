@@ -32,10 +32,10 @@ const config = {
   projectPath: path.join(__dirname, '../game'),
   
   // 版本号
-  version: '1.2.0',
+  version: '1.2.1',
   
   // 版本描述
-  desc: '小游戏集合平台 - 新增贪吃蛇游戏',
+  desc: '小游戏集合平台 - 新增连连看游戏',
   
   // 是否启用 ES6 转 ES5
   es6: true,
