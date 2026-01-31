@@ -20,6 +20,9 @@ import SnakeGame from './js/games/snake/SnakeGame.js';
 // 导入2048游戏
 import Game2048 from './js/games/2048/2048Game.js';
 
+// 导入连连看游戏
+import LinkGame from './js/games/linkgame/index.js';
+
 /**
  * 游戏启动函数
  * 就像按下游戏机的开机按钮一样！
@@ -59,6 +62,15 @@ function startGame() {
     description: '滑动合并相同数字，目标是合成2048！',
     icon: '🔢',
     GameClass: Game2048
+  });
+  
+  // 注册连连看游戏
+  gameManager.registerGame({
+    id: 'linkgame',
+    name: '连连看',
+    description: '找到相同的图案并用不超过两个拐角的线连接！',
+    icon: '🔗',
+    GameClass: LinkGame
   });
   
   // 显示游戏大厅（主界面）
