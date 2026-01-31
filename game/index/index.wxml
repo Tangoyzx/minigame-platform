@@ -1,4 +1,0 @@
-<!-- 小游戏容器页面 -->
-<view class="container">
-  <canvas id="gameCanvas" type="2d" canvas-id="gameCanvas"></canvas>
-</view>

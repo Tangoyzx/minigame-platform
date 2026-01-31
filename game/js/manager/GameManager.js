@@ -58,10 +58,6 @@ export default class GameManager {
     this.touchStartHandler = null;
     this.touchMoveHandler = null;
     this.touchEndHandler = null;
-    
-    // 键盘事件处理函数
-    this.keyDownHandler = null;
-    this.keyUpHandler = null;
   }
   
   /**
@@ -137,34 +133,6 @@ export default class GameManager {
     wx.onTouchStart(this.touchStartHandler);
     wx.onTouchMove(this.touchMoveHandler);
     wx.onTouchEnd(this.touchEndHandler);
-    
-    // 设置键盘事件监听器
-    this.setupKeyboardEvents();
-  }
-  
-  /**
-   * 设置键盘事件监听器
-   * 处理键盘按下和松开事件，如空格键跳跃等
-   */
-  setupKeyboardEvents() {
-    // 键盘按下事件处理函数
-    this.keyDownHandler = (event) => {
-      if (this.currentScene && this.currentScene.onKeyDown) {
-        this.currentScene.onKeyDown(event);
-      }
-    };
-    
-    // 键盘松开事件处理函数
-    this.keyUpHandler = (event) => {
-      if (this.currentScene && this.currentScene.onKeyUp) {
-        this.currentScene.onKeyUp(event);
-      }
-    };
-    
-    // 注册键盘事件监听器
-    document.addEventListener('keydown', this.keyDownHandler);
-    document.addEventListener('keyup', this.keyUpHandler);
-    console.log('⌨️ 键盘事件监听器已设置');
   }
   
   /**

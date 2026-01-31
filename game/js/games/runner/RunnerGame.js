@@ -428,32 +428,6 @@ export default class RunnerGame extends BaseGame {
     return true;
   }
   
-  /**
-   * 键盘按下事件
-   * @param {KeyboardEvent} event - 键盘事件
-   */
-  onKeyDown(event) {
-    if (this.isGameOver) {
-      return;
-    }
-    
-    switch (event.key) {
-      case ' ': // 空格键
-        // 跳跃
-        this.player.jump();
-        break;
-    }
-  }
-  
-  /**
-   * 键盘松开事件
-   * @param {KeyboardEvent} event - 键盘事件
-   */
-  onKeyUp(event) {
-    // 不需要处理，因为已经移除了左右移动功能
-    return;
-  }
-  
 
   
   /**
