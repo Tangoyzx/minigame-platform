@@ -160,15 +160,22 @@ export default class LinkGame extends BaseGame {
     // 选择当前关卡使用的图案
     const availablePatterns = this.patterns.slice(0, patternCount);
     
-    const maxRetries = 50; // 最大重试次数
+    const maxRetries = 100; // 增加最大重试次数
     let retryCount = 0;
     let isSolvable = false;
     
     while (!isSolvable && retryCount < maxRetries) {
-      // 创建图案对（每个图案出现两次）
+      // 严格创建图案对（确保每个图案严格成对）
       const patternPairs = [];
       for (const pattern of availablePatterns) {
         patternPairs.push(pattern, pattern);
+      }
+      
+      // 验证图案对数量是否为偶数
+      if (patternPairs.length % 2 !== 0) {
+        console.error('❌ 图案对数量不是偶数，重新生成');
+        retryCount++;
+        continue;
       }
       
       // 打乱顺序
@@ -192,28 +199,96 @@ export default class LinkGame extends BaseGame {
         }
       }
       
-      // 验证棋盘是否可解
+      // 创建算法实例进行验证
       this.algorithm = new LinkGameAlgorithm(this.grid);
-      isSolvable = this.algorithm.isBoardSolvable();
+      
+      // 首先验证图案数量是否严格成对
+      const patternValidation = this.algorithm.validateGameState();
+      if (!patternValidation) {
+        console.warn(`🔄 图案数量验证失败，重新生成 (${retryCount}/${maxRetries})`);
+        retryCount++;
+        continue;
+      }
+      
+      // 然后验证棋盘是否可解
+      isSolvable = this.algorithm.strictBoardValidation();
       
       if (!isSolvable) {
         retryCount++;
         console.log(`🔄 棋盘不可解，重新生成 (${retryCount}/${maxRetries})`);
         
-        // 如果达到最大重试次数，尝试洗牌
+        // 如果达到最大重试次数，尝试深度洗牌
         if (retryCount >= maxRetries) {
-          console.log('⚠️ 达到最大重试次数，尝试洗牌棋盘');
-          this.algorithm.reshuffleGrid();
-          isSolvable = this.algorithm.isBoardSolvable();
+          console.log('⚠️ 达到最大重试次数，尝试深度洗牌棋盘');
+          this.deepReshuffleGrid();
+          isSolvable = this.algorithm.strictBoardValidation();
         }
       }
     }
     
     if (isSolvable) {
       console.log(`✅ 生成可完全消除的棋盘 (重试次数: ${retryCount})`);
+      
+      // 最终验证
+      const finalValidation = this.algorithm.strictBoardValidation();
+      if (!finalValidation) {
+        console.error('❌ 最终验证失败，但继续游戏');
+      }
     } else {
       console.warn('❌ 无法生成可完全消除的棋盘，使用当前棋盘继续游戏');
     }
+  }
+  
+  /**
+   * 深度洗牌棋盘 - 更彻底的洗牌算法
+   */
+  deepReshuffleGrid() {
+    console.log('🔄 执行深度洗牌...');
+    
+    const visibleCells = this.getVisibleCells();
+    const patterns = [];
+    
+    // 收集所有图案
+    for (const cell of visibleCells) {
+      if (cell.pattern) {
+        patterns.push(cell.pattern);
+      }
+    }
+    
+    // 多次打乱图案顺序
+    for (let i = 0; i < 5; i++) {
+      this.shuffleArray(patterns);
+    }
+    
+    // 重新分配图案
+    let patternIndex = 0;
+    for (const cell of visibleCells) {
+      if (patternIndex < patterns.length) {
+        cell.pattern = patterns[patternIndex];
+        patternIndex++;
+      }
+    }
+    
+    // 重新创建算法实例
+    this.algorithm = new LinkGameAlgorithm(this.grid);
+  }
+  
+  /**
+   * 获取所有可见且未匹配的格子
+   */
+  getVisibleCells() {
+    const visibleCells = [];
+    
+    for (let row = 0; row < this.gridRows; row++) {
+      for (let col = 0; col < this.gridCols; col++) {
+        const cell = this.grid[row][col];
+        if (cell.visible && !cell.matched) {
+          visibleCells.push(cell);
+        }
+      }
+    }
+    
+    return visibleCells;
   }
   
   /**

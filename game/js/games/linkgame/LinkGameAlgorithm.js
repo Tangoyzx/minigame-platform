@@ -369,6 +369,67 @@ export class LinkGameAlgorithm {
   }
   
   /**
+   * 严格的棋盘验证 - 确保所有图案都能找到匹配对
+   */
+  strictBoardValidation() {
+    // 首先验证基本游戏状态
+    if (!this.validateGameState()) {
+      return false;
+    }
+    
+    const visibleCells = this.getVisibleCells();
+    
+    // 如果棋盘为空，直接返回成功
+    if (visibleCells.length === 0) {
+      return true;
+    }
+    
+    // 按图案类型分组
+    const patternGroups = {};
+    for (const cell of visibleCells) {
+      if (!cell.pattern) continue;
+      
+      const patternId = cell.pattern.id;
+      if (!patternGroups[patternId]) {
+        patternGroups[patternId] = [];
+      }
+      patternGroups[patternId].push(cell);
+    }
+    
+    // 检查每种图案是否至少有一对可以连接
+    for (const patternId in patternGroups) {
+      const cells = patternGroups[patternId];
+      
+      // 如果该图案只有一对，直接检查是否可以连接
+      if (cells.length === 2) {
+        if (!this.canConnect(cells[0], cells[1])) {
+          console.warn(`图案 ${patternId} 的唯一一对无法连接`);
+          return false;
+        }
+      } else {
+        // 对于多个相同图案，检查是否存在至少一对可连接的
+        let foundConnectablePair = false;
+        
+        for (let i = 0; i < cells.length && !foundConnectablePair; i++) {
+          for (let j = i + 1; j < cells.length && !foundConnectablePair; j++) {
+            if (this.canConnect(cells[i], cells[j])) {
+              foundConnectablePair = true;
+              break;
+            }
+          }
+        }
+        
+        if (!foundConnectablePair) {
+          console.warn(`图案 ${patternId} 的所有配对都无法连接`);
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
    * 检查棋盘是否可完全消除（深度验证算法）
    */
   isBoardSolvable() {
