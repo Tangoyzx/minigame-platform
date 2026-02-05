@@ -30,7 +30,8 @@ export default class GameLobby {
       margin: 15,                     // 卡片之间的间距
       startY: 150,                    // 第一张卡片的 Y 位置
       iconSize: 60,                   // 图标大小
-      cornerRadius: 15               // 圆角大小
+      cornerRadius: 15,               // 圆角大小
+      iconSize: 60                    // 图标大小
     };
     
     // 存储每个游戏卡片的位置信息（用于点击检测）
@@ -295,7 +296,7 @@ export default class GameLobby {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.font = '12px PingFang SC';
     ctx.textAlign = 'center';
-    ctx.fillText(`${versionConfig.getVersionWithPrefix()} | Made with ❤️`, this.screenWidth / 2, this.screenHeight - 30);
+    ctx.fillText('v1.0.0 | Made with ❤️', this.screenWidth / 2, this.screenHeight - 30);
   }
   
   /**
@@ -309,7 +310,7 @@ export default class GameLobby {
       if (this.isPointInCard(touch.x, touch.y, card)) {
         console.log(`🎮 选择游戏: ${card.name}`);
         // 切换到对应的游戏
-        this.gameManager.switchToGame(card.GameClass);
+        this.gameManager.switchToGame(card);
         return;
       }
     }

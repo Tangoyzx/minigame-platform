@@ -82,13 +82,25 @@ export default class GameManager {
     this.canvas.width = this.screenWidth;
     this.canvas.height = this.screenHeight;
     
-    // 4. 创建游戏大厅
+    // 4. 注册所有游戏
+    this.registerAllGames();
+    
+    // 5. 创建游戏大厅
     this.lobby = new GameLobby(this);
     
-    // 5. 设置触摸事件监听
+    // 6. 设置触摸事件监听
     this.setupTouchEvents();
     
     console.log('✅ GameManager 初始化完成');
+  }
+  
+  /**
+   * 注册所有可用的游戏
+   * 这个方法现在为空，因为游戏注册已经在game.js中完成
+   */
+  registerAllGames() {
+    console.log('📝 游戏注册已在game.js中完成');
+    console.log(`✅ 已注册 ${this.registeredGames.length} 个游戏`);
   }
   
   /**
@@ -177,20 +189,55 @@ export default class GameManager {
   /**
    * 切换到指定游戏
    * 
-   * @param {Function} GameClass - 游戏类
+   * @param {Object} gameInfo - 游戏信息
    */
-  switchToGame(GameClass) {
-    console.log('🎮 切换游戏中...');
+  switchToGame(gameInfo) {
+    console.log(`🎮 切换到游戏: ${gameInfo.name}`);
     
     // 如果当前有场景，先销毁
     if (this.currentScene) {
       this.currentScene.destroy();
     }
     
-    // 创建新游戏实例并初始化
-    const game = new GameClass(this);
-    this.currentScene = game;
-    game.init();
+    // 根据游戏ID动态导入游戏类
+    this.loadGameClass(gameInfo.id).then(GameClass => {
+      if (GameClass) {
+        // 创建新游戏实例并初始化
+        const game = new GameClass(this);
+        this.currentScene = game;
+        game.init();
+        console.log(`✅ ${gameInfo.name} 游戏启动成功`);
+      } else {
+        console.error(`❌ 无法加载游戏类: ${gameInfo.name}`);
+        // 如果加载失败，返回大厅
+        this.showLobby();
+      }
+    }).catch(error => {
+      console.error(`❌ 加载游戏类失败: ${gameInfo.name}`, error);
+      this.showLobby();
+    });
+  }
+  
+  /**
+   * 动态加载游戏类
+   * 
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise<Function>} - 游戏类
+   */
+  async loadGameClass(gameId) {
+    try {
+      // 由于游戏类已经在game.js中导入，我们直接从注册的游戏信息中获取
+      const gameInfo = this.registeredGames.find(game => game.id === gameId);
+      if (gameInfo && gameInfo.GameClass) {
+        return gameInfo.GameClass;
+      }
+      
+      console.error(`❌ 未找到游戏类: ${gameId}`);
+      return null;
+    } catch (error) {
+      console.error(`❌ 加载游戏类失败: ${gameId}`, error);
+      return null;
+    }
   }
   
   /**
