@@ -7,13 +7,28 @@ import subprocess
 import os
 import sys
 
-def run_command(command, description=""):
-    """执行shell命令并返回结果"""
+def run_command(command, description="", use_login_shell=False):
+    """执行shell命令并返回结果
+    
+    Args:
+        command: 要执行的命令
+        description: 命令描述
+        use_login_shell: 是否使用登录shell（用于需要nvm等环境的命令）
+    """
     if description:
         print(f"执行: {description}")
     
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        if use_login_shell:
+            # 使用 bash -l -c 来加载登录shell环境（包括nvm等）
+            result = subprocess.run(
+                ["bash", "-l", "-c", command],
+                capture_output=True,
+                text=True
+            )
+        else:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        
         if result.returncode != 0:
             print(f"错误: {result.stderr}")
             return False
@@ -57,7 +72,8 @@ def main():
     # 假设gemini-internal命令格式为: gemini-internal "总结现有本地修改，长度在三十字以内"
     summary_command = 'gemini-internal "总结现有本地修改，长度在三十字以内，放到LatestChange.md中"'
     
-    if run_command(summary_command, "生成修改总结"):
+    # 使用登录shell来确保nvm环境被加载（gemini-internal安装在nvm的node环境中）
+    if run_command(summary_command, "生成修改总结", use_login_shell=True):
         print("修改总结生成成功")
     else:
         print("警告: gemini-internal调用失败，使用默认提交信息")
