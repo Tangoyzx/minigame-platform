@@ -11,6 +11,9 @@ tools/private.*.key
 node_modules/
 tools/node_modules/
 
+# Python缓存
+tools/__pycache__/
+
 # 日志文件
 *.log
 logs/

@@ -20,6 +20,20 @@ const fs = require('fs');
 // ==================== 配置区域 ====================
 // 请根据你的实际情况修改以下配置
 
+// 读取版本配置文件
+const versionConfigPath = path.join(__dirname, '../game/config/version.json');
+let versionConfig = {};
+
+try {
+  versionConfig = JSON.parse(fs.readFileSync(versionConfigPath, 'utf8'));
+} catch (error) {
+  console.warn('⚠️  警告: 无法读取版本配置文件，使用默认配置');
+  versionConfig = {
+    version: '1.2.0',
+    description: '小游戏集合平台 - 新增贪吃蛇游戏'
+  };
+}
+
 const config = {
   // 小游戏的 AppID（在微信公众平台获取）
   appid: 'wx830f47b724e6ae8b',
@@ -31,11 +45,11 @@ const config = {
   // 游戏代码目录
   projectPath: path.join(__dirname, '../game'),
   
-  // 版本号
-  version: '1.2.0',
+  // 版本号（从配置文件读取）
+  version: versionConfig.version,
   
-  // 版本描述
-  desc: '小游戏集合平台 - 新增贪吃蛇游戏',
+  // 版本描述（从配置文件读取）
+  desc: versionConfig.description,
   
   // 是否启用 ES6 转 ES5
   es6: true,

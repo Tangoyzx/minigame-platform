@@ -5,7 +5,8 @@
   "main": "upload.js",
   "scripts": {
     "upload": "node upload.js",
-    "upload:preview": "node upload.js --preview"
+    "upload:preview": "node upload.js --preview",
+    "auto-commit": "python3 auto_commit.py"
   },
   "dependencies": {
     "miniprogram-ci": "^1.9.0"

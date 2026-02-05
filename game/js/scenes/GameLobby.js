@@ -8,6 +8,7 @@
  */
 
 import { drawRoundRect } from '../utils/utils.js';
+import versionConfig from '../../config/version.js';
 
 export default class GameLobby {
   /**
@@ -294,7 +295,7 @@ export default class GameLobby {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     ctx.font = '12px PingFang SC';
     ctx.textAlign = 'center';
-    ctx.fillText('v1.0.0 | Made with ❤️', this.screenWidth / 2, this.screenHeight - 30);
+    ctx.fillText(`${versionConfig.getVersionWithPrefix()} | Made with ❤️`, this.screenWidth / 2, this.screenHeight - 30);
   }
   
   /**
