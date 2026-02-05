@@ -40,8 +40,8 @@
     "disableSWC": true
   },
   "compileType": "game",
-  "libVersion": "3.3.4",
-  "appid": "wxf069d55e0141520c",
+  "libVersion": "3.14.1",
+  "appid": "wx830f47b724e6ae8b",
   "projectname": "minigame-platform",
   "condition": {},
   "simulatorPluginLibVersion": {},
